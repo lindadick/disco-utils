@@ -108,6 +108,8 @@ def insert_id3_tags(disc_number, track_number, artist, title, album):
     disco_filename = disc_number_string + '_' + track_number_string
     encoded_file_path = os.path.join(ENCODED_PATH_NUMBERED, disco_filename + '.' + ENCODER_FORMAT)
     if os.path.isfile(encoded_file_path):
+        if DEBUG:
+            print("Updating ID3 tags for " + encoded_file_path)
         audio = ID3(encoded_file_path)
         audio['TPE1'] = TPE1(encoding=3, text=artist)
         audio['TIT2'] = TIT2(encoding=3, text=title)
