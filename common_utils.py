@@ -4,7 +4,7 @@ import plyr
 import shutil
 from pydub import AudioSegment
 from time import localtime, strftime
-from mutagen.id3 import ID3, TPE1, TIT2, TRCK, TALB, APIC, TDEN, TDTG
+from mutagen.id3 import ID3, TPE1, TIT2, TRCK, TALB, APIC, TDEN, TDTG, ID3NoHeaderError
 
 DEBUG = True
 
@@ -110,7 +110,11 @@ def insert_id3_tags(disc_number, track_number, artist, title, album):
     if os.path.isfile(encoded_file_path):
         if DEBUG:
             print("Updating ID3 tags for " + encoded_file_path)
-        audio = ID3(encoded_file_path)
+        try: 
+            audio = ID3(encoded_file_path)
+        except ID3NoHeaderError:
+            print("Adding ID3 header")
+            audio = ID3()        
         audio['TPE1'] = TPE1(encoding=3, text=artist)
         audio['TIT2'] = TIT2(encoding=3, text=title)
         audio['TRCK'] = TRCK(encoding=3, text=track_number_string)
@@ -128,7 +132,7 @@ def insert_id3_tags(disc_number, track_number, artist, title, album):
                                 type=3, desc=u'Cover',
                                 data=albumart.read()
                                 )            
-        return audio.save()
+        return audio.save(encoded_file_path)
     return False
 
 def download_album_art(disc_number, artist, album, replace_existing):
