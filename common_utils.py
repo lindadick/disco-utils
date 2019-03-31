@@ -38,6 +38,8 @@ def create_track_symlinks(disc_number, track_number, artist, title, album_artist
     disc_number_string = format_disc_number_string(disc_number)
     track_number_string = format_track_number_string(track_number)
     real_file_path = os.path.join(ENCODED_PATH_NUMBERED, disc_number_string + '_' + track_number_string + '.' + ENCODER_FORMAT)
+    if DEBUG:
+        print("Creating symlinks for " + real_file_path)
     if not os.path.isdir(encoded_path_flat):
         os.makedirs (encoded_path_flat)
     if not os.path.isdir(encoded_path_folders):
@@ -139,6 +141,8 @@ def download_album_art(disc_number, artist, album, replace_existing):
     disc_number_string = format_disc_number_string(disc_number)
     art_file_path = os.path.join(ART_DIR, disc_number_string + '.' + IMAGE_FORMAT)
     if replace_existing or not os.path.isfile(art_file_path):
+        if DEBUG:
+            print("Downloading art for " + art_file_path)
         qry = plyr.Query(artist=artist, album=album, get_type='cover', allowed_formats=[IMAGE_FORMAT])        
         qry.useragent = USER_AGENT
         items = qry.commit()
