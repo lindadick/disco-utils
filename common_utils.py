@@ -33,8 +33,10 @@ def delete_all_symlinks():
         shutil.rmtree(ENCODED_PATH_FOLDERS)
 
 def create_track_symlinks(disc_number, track_number, artist, title, album_artist, album_title):
-    encoded_path_flat = os.path.join(ENCODED_PATH_FLAT, album_artist)
-    encoded_path_folders = os.path.join(ENCODED_PATH_FOLDERS, album_artist, album_title)
+    safe_album_artist = format_filename(album_artist)
+    safe_album_title = format_filename(album_title)
+    encoded_path_flat = os.path.join(ENCODED_PATH_FLAT, safe_album_artist)
+    encoded_path_folders = os.path.join(ENCODED_PATH_FOLDERS, safe_album_artist, safe_album_title)
     disc_number_string = format_disc_number_string(disc_number)
     track_number_string = format_track_number_string(track_number)
     real_file_path = os.path.join(ENCODED_PATH_NUMBERED, disc_number_string + '_' + track_number_string + '.' + ENCODER_FORMAT)
@@ -51,10 +53,10 @@ def create_track_symlinks(disc_number, track_number, artist, title, album_artist
         track_title = title
 
     track_number_string = format_track_number_string(track_number)
-    encoded_filename_flat = format_filename(album_artist + ' - ' + album_title + ' - ' + track_number_string + ' - ' + track_title) + '.' + ENCODER_FORMAT
-    encoded_filename_folders = format_filename(track_number_string + ' - ' + track_title) + '.' + ENCODER_FORMAT
-    encoded_filepath_flat = os.path.join(encoded_path_flat, encoded_filename_flat)
-    encoded_filepath_folders = os.path.join(encoded_path_folders, encoded_filename_folders)
+    encoded_filename_flat = format_filename(album_artist + ' - ' + album_title + ' - ' + track_number_string + ' - ' + track_title)
+    encoded_filename_folders = format_filename(track_number_string + ' - ' + track_title)
+    encoded_filepath_flat = create_fat32_filepath(encoded_path_flat, encoded_filename_flat, ENCODER_FORMAT)
+    encoded_filepath_folders = create_fat32_filepath(encoded_path_folders, encoded_filename_folders, ENCODER_FORMAT)
     if not os.path.islink(encoded_filepath_flat):
         os.symlink(real_file_path, encoded_filepath_flat)
     if not os.path.islink(encoded_filepath_folders):
@@ -63,18 +65,22 @@ def create_track_symlinks(disc_number, track_number, artist, title, album_artist
 def format_filename(s):
     '''Take a string and return a valid filename constructed from the string.
 Uses a whitelist approach: any characters not present in valid_chars are
-removed. Also spaces are replaced with underscores.
- 
-Note: this method may produce invalid filenames such as ``, `.` or `..`
-When I use this method I prepend a date string like '2009_01_15_19_46_32_'
-and append a file extension like '.txt', so I avoid the potential of using
-an invalid filename.
-
+removed. 
 https://gist.github.com/seanh/93666 
 '''
-    valid_chars = '-_.() %s%s' % (string.ascii_letters, string.digits)
+    valid_chars = '-_() %s%s' % (string.ascii_letters, string.digits)
     filename = ''.join(c for c in s if c in valid_chars)
-    return filename
+    if filename == '':
+        return "invalid_filename"
+    else:
+        return filename.strip()
+
+def create_fat32_filepath(path, filename, extension):
+    '''Truncates the given filename to fit within 255 characters for FAT32 compatibility.
+'''
+    max_chars = 255 - 1 - len(extension) - len(path)
+    truncated_filename = filename[:max_chars].strip()
+    return os.path.join(path, truncated_filename + "." + extension)
 
 def encode_track(disc_number, track_number, artist, title, album_artist, album_title):
     if not os.path.isdir(ENCODED_PATH_NUMBERED):
